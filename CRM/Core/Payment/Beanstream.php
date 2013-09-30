@@ -67,9 +67,9 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     $request['email'] = $this->bestEmail($params);
     $beanstream->prepare($request);
     // $request['customerIPAddress'] = (function_exists('ip_address') ? ip_address() : $_SERVER['REMOTE_ADDR']);
-    $credentials = array( 'merchant_id' => $this->_paymentProcessor['user_name'],
-                          'username'  => $this->_paymentProcessor['signature'],
-                          'password'  => $this->_paymentProcessor['password']);
+    $credentials = array( 'merchant_id' => $this->_paymentProcessor['signature'],
+                          'username'  => $this->_paymentProcessor['user_name'],
+                          'password'  => $this->_paymentProcessor['password']); 
     // Get the API endpoint URL for the method's transaction mode.
     // TODO: enable override of the default url in the request object
     // $url = $this->_paymentProcessor['url_site'];
@@ -168,11 +168,15 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     $error = array();
 
     if (empty($this->_paymentProcessor['user_name'])) {
-      $error[] = ts('Agent Code is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
+      $error[] = ts('Merchant ID is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
     }
 
     if (empty($this->_paymentProcessor['password'])) {
       $error[] = ts('Password is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
+    }
+
+    if (empty($this->_paymentProcessor['signature'])) {
+      $error[] = ts('Username is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
     }
 
     if (!empty($error)) {
