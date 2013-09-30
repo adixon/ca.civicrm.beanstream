@@ -66,5 +66,28 @@ function beanstream_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  * is installed, disabled, uninstalled.
  */
 function beanstream_civicrm_managed(&$entities) {
+
+  $entities[] = array(
+    'module' => 'ca.civicrm.beanstream',
+    'name' => 'Beanstream',
+    'entity' => 'PaymentProcessorType',
+    'params' => array(
+      'version' => 3,
+      'name' => 'Beanstream',
+      'title' => 'Beanstream',
+      'description' => 'Beanstream Payment Processor',
+      'class_name' => 'Payment_Beanstream',
+      'billing_mode' => 'form',
+      'user_name_label' => 'Merchant ID',
+      'password_label' => 'API access passcode',
+      'url_site_default'=> 'https://www.beanstream.com/scripts/process_transaction.asp',
+      'url_recur_default' => 'https://www.beanstream.com/scripts/process_transaction.asp',
+      'url_site_test_default' => 'https://www.beanstream.com/scripts/process_transaction.asp',
+      'url_recur_test_default' => 'https://www.beanstream.com/scripts/process_transaction.asp',
+      'is_recur' => 1,
+      'payment_type' => 1
+    ),
+  );
+
   return _beanstream_civix_civicrm_managed($entities);
 }

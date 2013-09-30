@@ -2,7 +2,7 @@
 <extension key="ca.civicrm.beanstream" type="module">
   <file>beanstream</file>
   <name>Beanstream payment processor</name>
-  <description>Beanstream payment process using SOAP</description>
+  <description>Beanstream payment processor using server-to-server POST</description>
   <urls>
     <url desc="Main Extension Page">http://blackflysolutions.ca/project/beanstream-civicrm-extension</url>
     <url desc="Documentation"></url>

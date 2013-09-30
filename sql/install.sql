@@ -33,13 +33,15 @@ CREATE TABLE `civicrm_beanstream_request_log` (
 
 CREATE TABLE `civicrm_beanstream_response_log` (
   `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Response Log Id',
-  `invoice_num` varchar(255) NOT NULL COMMENT 'Invoice number sent to Beanstream',
-  `auth_result` varchar(255) NOT NULL COMMENT 'Authorization string returned from Beanstream',
+  `order_number` varchar(255) NOT NULL COMMENT 'Order number sent to Beanstream',
+  `auth_code` varchar(255) NOT NULL COMMENT 'Authorization string returned from Beanstream',
   `remote_id` varchar(255) NOT NULL COMMENT 'Beanstream-internal transaction id',
+  `message_id` varchar(255) NOT NULL COMMENT 'Beanstream-internal message id',
   `response_datetime` datetime COMMENT 'Date time of response',
   PRIMARY KEY ( `id` ),
-  KEY (`invoice_num`),
-  KEY (`auth_result`),
+  KEY (`order_number`),
+  KEY (`auth_code`),
   KEY (`remote_id`),
+  KEY (`message_id`),
   KEY (`response_datetime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Table for response log';

@@ -63,8 +63,8 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     if (!in_array($params['currencyID'], explode(',', $beanstream::CURRENCIES))) {
       return self::error('Invalid currency selection, must be one of ' . $beanstream::CURRENCIES);
     }
-    $request = $this->convertParams($params, $method);
-    $request['email'] = $this->email($params);
+    $request = $this->convertParams($params);
+    $request['email'] = $this->bestEmail($params);
     $beanstream->prepare($request);
     // $request['customerIPAddress'] = (function_exists('ip_address') ? ip_address() : $_SERVER['REMOTE_ADDR']);
     $credentials = array( 'merchant_id' => $this->_paymentProcessor['user_name'],
@@ -101,7 +101,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
         // CRM_Utils_Hook::alterPaymentProcessorParams($this, $params, $beanstreamlink1);
         $customer_code = $result['TODO'];
         $exp = sprintf('%02d%02d', ($params['year'] % 100), $params['month']);
-        $email = $this->email($params);
+        $email = $this->bestEmail($params);
         $query_params = array(
           1 => array($customer_code, 'String'),
           2 => array($request['customerIPAddress'], 'String'),
@@ -120,17 +120,14 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     }
   }
   
-  function email($params) {
-    if (isset($params['email'])) {
-      $email = $params['email'];
+  function bestEmail($params) {
+    $email = '';
+    foreach(array('','-5','-Primary') as $suffix) {
+      if (!empty($params['email'.$suffix])) {
+        return $params['email'.$suffix];
+      }
     }
-    elseif(isset($params['email-5'])) {
-      $email = $params['email-5'];
-    }
-    elseif(isset($params['email-Primary'])) {
-      $email = $params['email-Primary'];
-    }
-    return $email;
+    return;
   }
 
   function &error($error = NULL) {
@@ -192,7 +189,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
    * TODO: need to require or somehow fill in email and phone!
    * TODO: deal with profile saving
    */
-  function convertParams($params, $method) {
+  function convertParams($params) {
     $request = array();
     $convert = array(
       'ordAddress1' => 'street_address',
