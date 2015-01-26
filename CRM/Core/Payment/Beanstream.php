@@ -91,7 +91,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
       return self::error($message);
     }
     else { // transaction was approved!
-      $params['trxn_id'] = $result['authCode'] . ':' . time();
+      $params['trxn_id'] = $result['trnId'] . ':' . time();
       $params['gross_amount'] = $params['amount'];
       if ($isRecur) { 
         // TODO: save the profile information in beanstream, needs a separate POST
