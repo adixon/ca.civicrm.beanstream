@@ -39,10 +39,10 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     $this->_profile['mode'] = $mode;
   }
 
-  static function &singleton($mode, &$paymentProcessor) {
+  static function &singleton($mode, &$paymentProcessor = NULL, &$paymentForm = NULL, $force = FALSE) {
     $processorName = $paymentProcessor['name'];
-    if (self::$_singleton[$processorName] === NULL) {
-      self::$_singleton[$processorName] = new CRM_Core_Payment_Beanstream($mode, $paymentProcessor);
+    if (self::$_singleton[$processorName] === NULL || $force) {
+      self::$_singleton[$processorName] = new self($mode, $paymentProcessor);
     }
     return self::$_singleton[$processorName];
   }
