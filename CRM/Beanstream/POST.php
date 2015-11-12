@@ -52,6 +52,12 @@ class Beanstream_POST {
       // log: ip, invoiceNum, , cc, total, date
       // print_r($logged_request); die();
       $ip = (function_exists('ip_address') ? ip_address() : $_SERVER['REMOTE_ADDR']);
+
+      if ($logged_request['trnOrderNumber'] == null) {
+        // Need to set this as it's null in some cases (webform_civicrm)
+        $logged_request['trnOrderNumber'] = '';
+      }
+
       $query_params = array(
         1 => array($logged_request['trnOrderNumber'], 'String'),
         2 => array($ip, 'String'),
