@@ -2,7 +2,7 @@
 <extension key="ca.civicrm.beanstream" type="module">
   <file>beanstream</file>
   <name>Beanstream payment processor</name>
-  <description>Beanstream payment processor using server-to-server POST</description>
+  <description>Beanstream payment processor using PHP-SDK</description>
   <urls>
     <url desc="Main Extension Page">http://blackflysolutions.ca/project/beanstream-civicrm-extension</url>
     <url desc="Documentation"></url>
@@ -13,14 +13,14 @@
     <author>Alan Dixon</author>
     <email>beanstream@blackflysolutions.ca</email>
   </maintainer>
-  <releaseDate>2013-09-27</releaseDate>
-  <version>1.0</version>
+  <releaseDate>2016-06-17</releaseDate>
+  <version>2.0</version>
   <develStage>alpha</develStage>
   <compatibility>
-    <ver>4.2</ver>
-    <ver>4.3</ver>
+    <ver>4.4</ver>
+    <ver>4.6</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <comments>Updated to use the 1.0.1 php SDK.</comments>
   <civix>
     <namespace>CRM/Beanstream</namespace>
   </civix>

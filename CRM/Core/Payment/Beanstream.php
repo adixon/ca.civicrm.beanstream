@@ -21,7 +21,9 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
    * @static
    */
   static private $_singleton = NULL;
-
+  // TODO: we have no way of testing that the merchant account currency matches my transaction
+  //   what other tools can we use to avoid charges in the wrong currency?
+  // const CURRENCIES = 'CAD, USD';
   /**
    * Constructor
    *
@@ -52,48 +54,38 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     if (!$this->_profile) {
       return self::error('Unexpected error, missing profile');
     }
-    // use the Beanstream SOAP object for interacting with Beanstream, mostly the same for recurring contributions
-    require_once("CRM/Beanstream/POST.php");
-    $isRecur =  CRM_Utils_Array::value('is_recur', $params) && $params['contributionRecurID'];
-    // to add debugging info in the drupal log, assign 1 to log['all'] below
-    /* TODO: beanstream object is ignoring all args to contructor */
-    // $postType = $isRecur ? 'profile' : 'transaction';
-    $postType = 'transaction';
-    $beanstream = new Beanstream_POST($postType); // ,array('log' => array('all' => 0),'trace' => FALSE));
-    if (!in_array($params['currencyID'], explode(',', $beanstream::CURRENCIES))) {
-      return self::error('Invalid currency selection, must be one of ' . $beanstream::CURRENCIES);
-    }
+    // use the Beanstream Gateway object
+    require 'vendor/autoload.php';
+    // $isRecur =  CRM_Utils_Array::value('is_recur', $params) && $params['contributionRecurID'];
+    $cred = array('merchant_id'  => $this->_paymentProcessor['user_name'], 'api_passcode'  => $this->_paymentProcessor['password']); 
+    $beanstream = new \Beanstream\Gateway($cred['merchant_id'], $cred['api_passcode'], 'www', 'v1');
+    // echo '<pre>'; print_r($beanstream); die();
+    // TODO: can I figure out from the gatway object whether the merchant account will support this currency? No!
+    //if (!in_array($params['currencyID'], explode(',', self::CURRENCIES))) {
+    //  return self::error('Invalid currency selection, must be one of ' . self::CURRENCIES);
+    //}
     $request = $this->convertParams($params);
-    $request['email'] = $this->bestEmail($params);
-    $beanstream->prepare($request);
-    // $request['customerIPAddress'] = (function_exists('ip_address') ? ip_address() : $_SERVER['REMOTE_ADDR']);
-    $credentials = array( 'merchant_id' => $this->_paymentProcessor['signature'],
-                          'username'  => $this->_paymentProcessor['user_name'],
-                          'password'  => $this->_paymentProcessor['password']); 
-    // Get the API endpoint URL for the method's transaction mode.
-    // TODO: enable override of the default url in the request object
-    // $url = $this->_paymentProcessor['url_site'];
-
-    // make the soap request
-    $response = $beanstream->process($credentials);
-    // process the soap response into a readable result
-    $result = $beanstream->result($response);
-    if (empty($result['trnApproved'])) {
-      // deal with errors of all kinds
-      $error = array();
-      foreach(array('messageText','errorFields','errorType') as $key) {
-         $error[$key] = empty($result[$key]) ? 'Unexpected error' : $result[$key];
-      }
-      $message = $error['messageText'];
-      if ('U' == $error['errorType']) {
-        $message .= $error['errorFields'];
-      } 
-      return self::error($message);
+    // $request['email'] = $this->bestEmail($params);
+    $request['customer_ip'] = (function_exists('ip_address') ? ip_address() : $_SERVER['REMOTE_ADDR']);
+    try {
+      //set to FALSE for Pre-Auth
+      $result = $beanstream->payments()->makeCardPayment($request, TRUE); 
+      CRM_Core_Error::debug_var('result', $result);
+      // print_r( $result );
+    } catch (\Beanstream\Exception $e) {
+      //handle exception by passing the message back to the user
+      // CRM_Core_Error::debug_var('request', $request);
+      // CRM_Core_Error::debug_var('exception', $e);
+      return self::error($e->getMessage() . '[Error code '.$e->getCode().']');
+    } 
+    if (empty($result['approved'])) {
+      // unexpected error
+      return self::error($result['message']. '[Error code '.$result['message_id'].']');
     }
     else { // transaction was approved!
-      $params['trxn_id'] = $result['trnId'] . ':' . time();
+      $params['trxn_id'] = $result['auth_code'] . ':' . time();
       $params['gross_amount'] = $params['amount'];
-      if ($isRecur) { 
+      /* if ($isRecur) { 
         // TODO: save the profile information in beanstream, needs a separate POST
         // save the client info in my custom table
         // Allow further manipulation of the arguments via custom hooks,
@@ -115,7 +107,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
         $params['contribution_status_id'] = 1;
         // also set next_sched_contribution
         $params['next_sched_contribution'] = strtotime('+'.$params['frequency_interval'].' '.$params['frequency_unit']);
-      }
+      } */
       return $params;
     }
   }
@@ -172,11 +164,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
     }
 
     if (empty($this->_paymentProcessor['password'])) {
-      $error[] = ts('Password is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
-    }
-
-    if (empty($this->_paymentProcessor['signature'])) {
-      $error[] = ts('Username is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
+      $error[] = ts('API access password is not set in the Administer CiviCRM &raquo; System Settings &raquo; Payment Processors.');
     }
 
     if (!empty($error)) {
@@ -190,26 +178,49 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
   /*
    * Convert the values in the civicrm params to the request array with keys as expected by Beanstream
    * convert array has beanstream => civicrm names
-   * TODO: need to require or somehow fill in email and phone!
    * TODO: deal with profile saving
+   * SAMPLE: $payment_data = array(
+            'order_number' => 'orderNumber0023',
+            'amount' => 19.99,
+            'payment_method' => 'card',
+            'card' => array(
+                'name' => 'Mr. Card Testerson',
+                'number' => '4030000010001234',
+                'expiry_month' => '07',
+                'expiry_year' => '22',
+                'cvd' => '123'
+            )
+    ); 
+     See http://developer.beanstream.com/documentation/rest-api-reference/
    */
   function convertParams($params) {
-    $request = array();
-    $convert = array(
-      'ordAddress1' => 'street_address',
-      'ordCity' => 'city',
-      'ordProvince' => 'state_province',
-      'ordPostalCode' => 'postal_code',
-      'trnOrderNumber' => 'invoiceID',
-      'trnCardNumber' => 'credit_card_number',
-      'trnCardCvd' => 'cvv2',
-      'ordEmailAddress' => 'email', 
-      'ordPhoneNumber' => 'phone',
+    $request = array(
+      'order_number' => $params['invoiceID'],
+      'amount' => 0,
+      'payment_method' => 'card',
+      'card' => array(),
+      'billing' => array(),
     );
- 
-    foreach($convert as $r => $p) {
-      if (isset($params[$p])) {
-        $request[$r] = $params[$p];
+    $convert = array(
+      'card' => array(
+        'cvd' => 'cvv2',
+        'number' => 'credit_card_number',
+      ),
+      'billing' => array(
+        'address_line1' => 'street_address',
+        'city' => 'city',
+        'province' => 'state_province',
+        'country' => 'country',
+        'postal_code' => 'postal_code',
+        'email_address' => 'email', 
+        'phone_number' => 'phone',
+      )
+    );
+    foreach($convert as $key => $group) {
+      foreach($group as $r => $p) {
+        if (isset($params[$p])) {
+          $request[$key][$r] = $params[$p];
+        }
       }
     }
     $fullname = array();
@@ -218,12 +229,11 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment {
         $fullname[] = $params['billing_'.$name.'_name'];
       }
     }
-    $request['trnCardOwner'] = implode(' ',$fullname);
-    $request['trnExpMonth'] = sprintf('%02d', $params['month']);
-    $request['trnExpYear'] = sprintf('%02d', ($params['year'] % 100));
-    $request['trnAmount'] = sprintf('%01.2f', $params['amount']);
-    $request['ordProvince'] = $params['state_province']; // convert to 2-character id codes for Canada/US
-    $request['ordCountry'] = $params['country']; // TODO! this should convert country name to 2-character ISO code
+    $request['card']['name'] = implode(' ',$fullname);
+    $request['billing']['name'] = implode(' ',$fullname);
+    $request['card']['expiry_month'] = sprintf('%02d', $params['month']);
+    $request['card']['expiry_year'] = sprintf('%02d', ($params['year'] % 100));
+    $request['amount'] = sprintf('%01.2f', $params['amount']);
     return $request;
   }
  
