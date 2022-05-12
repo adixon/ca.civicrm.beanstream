@@ -1,6 +1,6 @@
 <?php
 require_once 'CRM/Core/Payment.php';
-
+use Civi\Payment\Exception\PaymentProcessorException;
 class CRM_Core_Payment_Beanstream extends CRM_Core_Payment
 {
     const CHARSET  = 'iso-8859-1';
@@ -119,11 +119,12 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment
      */
     function doPayment(&$params, $component = 'contribute')
     {
-        if (empty($params['amount'])) {
-          return [
+	$completed = [
             'payment_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'),
-            'payment_status' => 'Completed',
-          ];
+	    'payment_status' => 'Completed',
+        ];
+        if (empty($params['amount'])) {
+          return $completed;
         }
         $requestFields = self::mapParamsToBeanstreamFields($params);
 
@@ -141,7 +142,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment
             $ch = curl_init();
             if (! $ch)
             {
-                CRM_Core_Error::fatal("Could not connect to Beanstream payment gateway.");
+                throw new PaymentProcessorException("Could not connect to Beanstream payment gateway.");
             }
             curl_setopt($ch, CURLOPT_POST, TRUE);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
@@ -174,7 +175,7 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment
             #error_log(print_r($postfields, true));
             error_log("An error occurred while connecting to Beanstream to process a payment. Curl error ".curl_errno($ch)." '".curl_error($ch)."'.");
             error_log("Could not connect to ".$this->_paymentProcessor['url_site']);
-            CRM_Core_Error::fatal("The payment processor has DECLINED your request. [".curl_error($ch)."]");
+            throw new PaymentProcessorException("The payment processor has DECLINED your request. [".curl_error($ch)."]");
         }
 
 error_log("response: ".print_r($responseData, true));
@@ -188,15 +189,16 @@ error_log("response: ".print_r($responseData, true));
             # declined
             if ($trnResult['trnApproved'] != "1" && $trnResult['paymentMethod'] == "CC")
             {
-                CRM_Core_Error::fatal("The payment processor has DECLINED your request. [" .$trnResult['messageId'].
-                    " - ".$trnResult['messageText']."]");
+                // CRM_Core_Error::statusBounce("The payment processor has DECLINED your request. [" .$trnResult['messageId']. " - ".$trnResult['messageText']."]");
+                throw new PaymentProcessorException("The payment processor has DECLINED your request. [" .$trnResult['messageId']. " - ".$trnResult['messageText']."]");
             }
             else
             {
                 # approved
                 $params['trxn_id'] = $trnResult['trnId'];
                 $params['trxn_result_code'] =  "Message: ".$trnResult['messageText']."Order number: ".$trnResult['trnOrderNumber'].
-                    " authcode: ".$trnResult['authCode']."CVD Response: ".$trnResult['cvdId'];
+			" authcode: ".$trnResult['authCode']."CVD Response: ".$trnResult['cvdId'];
+		$params += $completed;
                 return $params;
             }
         }
@@ -210,7 +212,7 @@ error_log("response: ".print_r($responseData, true));
 
         if ($component != 'contribute' && $component != 'event')
         {
-            CRM_Core_Error::fatal(ts('Component is invalid'));
+            throw new PaymentProcessorException(ts('Component is invalid'));
         }
 
         $notifyURL = $config->userFrameworkResourceURL.
@@ -259,7 +261,7 @@ error_log("response: ".print_r($responseData, true));
         {
             require_once 'CRM/Utils/System.php';
             $fixUrl = CRM_Utils_System::url("civicrm/admin/setting/url", '&reset=1');
-            CRM_Core_Error::fatal(ts("Cannot send a relative URL to a notify payment processor. ".
+            throw new PaymentProcessorException(ts("Cannot send a relative URL to a notify payment processor. ".
                 "Please make your resource URL (in <a href=\"%1\">Administer CiviCRM &raquo; ".
                 "Global Settings &raquo; Resource URLs</a>) complete.", array(1 => $fixUrl)));
         }
@@ -338,7 +340,7 @@ error_log("response: ".print_r($responseData, true));
     #        }
     #        else
     #        {
-    #            CRM_Core_Error::fatal(ts('Recurring contribution, but no database id'));
+    #            CRM_Core_Error::statusBounce(ts('Recurring contribution, but no database id'));
     #        }
     #
     #        $PaymentProcessorParams += array(
