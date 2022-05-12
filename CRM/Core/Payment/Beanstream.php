@@ -117,8 +117,14 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment
      * @return array the result in an nice formatted array (or an error object)
      * @public
      */
-    function doDirectPayment(&$params)
+    function doPayment(&$params, $component = 'contribute')
     {
+        if (empty($params['amount'])) {
+          return [
+            'payment_status_id' => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'),
+            'payment_status' => 'Completed',
+          ];
+        }
         $requestFields = self::mapParamsToBeanstreamFields($params);
 
         # allow manipulation of the arguments via custom hook
