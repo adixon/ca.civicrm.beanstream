@@ -10,15 +10,6 @@ function beanstream_civicrm_config(&$config) {
 }
 
 /**
- * Implementation of hook_civicrm_xmlMenu
- *
- * @param $files array(string)
- */
-function beanstream_civicrm_xmlMenu(&$files) {
-  _beanstream_civix_civicrm_xmlMenu($files);
-}
-
-/**
  * Implementation of hook_civicrm_install
  */
 function beanstream_civicrm_install() {
@@ -89,5 +80,23 @@ function beanstream_civicrm_managed(&$entities) {
     ),
   );
 
-  return _beanstream_civix_civicrm_managed($entities);
+//   return _beanstream_civix_civicrm_managed($entities);
 }
+
+/**
+ * Implements hook_civicrm_postInstall().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postInstall
+ */
+function beanstream_civicrm_postInstall() {
+  _beanstream_civix_civicrm_postInstall();
+}
+
+// /**
+//  * Implements hook_civicrm_entityTypes().
+//  *
+//  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
+//  */
+// function beanstream_civicrm_entityTypes(&$entityTypes) {
+//   _beanstream_civix_civicrm_entityTypes($entityTypes);
+// }
