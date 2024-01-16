@@ -79,10 +79,10 @@ class CRM_Core_Payment_Beanstream extends CRM_Core_Payment
         #error_log(print_r($params, true));
         if (isset($params["is_pledge"]) && 1 == $params["is_pledge"])
         {
-            #[is_pledge] => 1
-            #[pledge_installments] => 4
-            #[pledge_frequency_interval] => 6
-            #[pledge_frequency_unit] => month
+            # [is_pledge] => 1
+            # [pledge_installments] => 4
+            # [pledge_frequency_interval] => 6
+            # [pledge_frequency_unit] => month
             $requestFields['trnRecurring']      = "1";                  # this is a recurring transaction
             $requestFields['rbBillingPeriod']   = "M";                  # monthly
             if (isset($params["pledge_frequency_unit"]) && $params["pledge_frequency_unit"] == "year")
