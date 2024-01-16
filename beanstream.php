@@ -17,37 +17,10 @@ function beanstream_civicrm_install() {
 }
 
 /**
- * Implementation of hook_civicrm_uninstall
- */
-function beanstream_civicrm_uninstall() {
-  return _beanstream_civix_civicrm_uninstall();
-}
-
-/**
  * Implementation of hook_civicrm_enable
  */
 function beanstream_civicrm_enable() {
   return _beanstream_civix_civicrm_enable();
-}
-
-/**
- * Implementation of hook_civicrm_disable
- */
-function beanstream_civicrm_disable() {
-  return _beanstream_civix_civicrm_disable();
-}
-
-/**
- * Implementation of hook_civicrm_upgrade
- *
- * @param $op string, the type of operation being performed; 'check' or 'enqueue'
- * @param $queue CRM_Queue_Queue, (for 'enqueue') the modifiable list of pending up upgrade tasks
- *
- * @return mixed  based on op. for 'check', returns array(boolean) (TRUE if upgrades are pending)
- *                for 'enqueue', returns void
- */
-function beanstream_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _beanstream_civix_civicrm_upgrade($op, $queue);
 }
 
 /**
@@ -81,15 +54,6 @@ function beanstream_civicrm_managed(&$entities) {
   );
 
 //   return _beanstream_civix_civicrm_managed($entities);
-}
-
-/**
- * Implements hook_civicrm_postInstall().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postInstall
- */
-function beanstream_civicrm_postInstall() {
-  _beanstream_civix_civicrm_postInstall();
 }
 
 // /**
